@@ -7,7 +7,7 @@ A userscript that adds some tweaks to [Kongregate]'s chat
   - [Greasemonkey] - Firefox
   - [Tampermonkey] - Chrome
 2. install the script from github
-  - [k++.user.js](https://github.com/Adored0ne/K%2B%2B/raw/master/src/K%2B%2B.user.js)
+  - [k++.user.js](https://github.com/Adored0ne/K-plus-plus/raw/master/src/K%2B%2B.user.js)
 
 ## See also
 
