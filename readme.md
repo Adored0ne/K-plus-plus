@@ -11,7 +11,7 @@ A userscript that adds some tweaks to [Kongregate]'s chat
 
 ## See also
 
-See [Contributing](docs/contributing.md) for additional information on building and contributing to Squirrel.
+See [Contributing](docs/contributing.md) for additional information on building and contributing to K++.
 
 
 [Kongregate]:https://www.kongregate.com
