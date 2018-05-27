@@ -4,7 +4,7 @@
 // @version      2.0.7
 // @description  Kongregate chat Mod
 // @author       KonzenDouji
-// @match        https://www.kongregate.com/*
+// @match        https://www.kongregate.com/games/*
 // @grant        none
 // ==/UserScript==
 
@@ -13,11 +13,11 @@ javascript: (function() {
 })();
 
 function start() {
+  if (!ready_to_start()) {
+    setTimeout(start, 300);
+    return;
+  }
   if (document.initialized == null) {
-    if (document.getElementsByClassName('chat_message_window')[1] === undefined) {
-      setTimeout(start, 300);
-      return;
-    }
     /* Configuration variables: */
     /* expandBy (number) - pixels to be added to chat container width */
     /* localStorage (true|false) - true: enables saving chat to localStorage, false: disables saving chat to localStorage */
@@ -75,6 +75,10 @@ function start() {
     document.initialized = true;
   }
   toggle_chat_width();
+}
+
+function ready_to_start() {
+  return document.getElementsByClassName('chat_message_window')[1] !== undefined ? true : false;
 }
 
 function options() {
