@@ -17,68 +17,67 @@ function start() {
     setTimeout(start, 300);
     return;
   }
-  if (document.initialized == null) {
-    /* Configuration variables: */
-    /* expandBy (number) - pixels to be added to chat container width */
-    /* localStorage (true|false) - true: enables saving chat to localStorage, false: disables saving chat to localStorage */
-    /* localStorageSize (number) - max number of chat messages to save in localStorage */
-    /* autosave (number) - number of chat inactivity seconds after which autosave is triggered */
-    /* timestamps ("fixed"|"dynamic"|"off") - "fixed": default behaviour, "dynamic": makes timestamps visible only when the mouse cursor hovers over chat messages, "off": hides timestamps */
-    KonzenChat = {
-      "version": "2.0.7",
-      "expandBy": 220,
-      "localStorage": true,
-      "localStorageSize": 15,
-      "autosave": 10,
-      "timestamps": "fixed"
-    };
-    /* Begin */
+  /* Begin */
+  if (window.KonzenChat === undefined) {
     define_scrollIntoViewIfNeeded();
-    if (window.localStorage !== undefined) {
-      if (localStorage.getItem('options') === null) {
-        KonzenChat.options = new options();
-        localStorage.setItem('options', JSON.stringify(KonzenChat.options));
-      } else {
-        KonzenChat.options = JSON.parse(localStorage.getItem('options'));
-        if (KonzenChat.version > KonzenChat.options.version) {
-          /*localStorage.removeItem('session');*/
-          KonzenChat.options.version = KonzenChat.version;
-          localStorage.setItem('options', JSON.stringify(KonzenChat.options));
+    get_environment();
+    if (KonzenChat.saveChatTolocalStorage == true) {
+      load_backlog(0);
+    }
+    build_UI(0);
+    if (document.getElementsByClassName('btn btn_tools btn_target pan')[1] !== undefined) {
+      build_UI(1);
+      KonzenChat.search_bar_room_initiated = true;
+    } else {
+      document.getElementsByClassName('unread_chat_messages spriteall spritegame')[0].parentNode.onclick = function(event) {
+        if (KonzenChat.search_bar_room_initiated != true) {
+          KonzenChat.timeout = setTimeout(function() {
+            create_search_bar_delayed();
+          }, 300);
         }
-        KonzenChat.timestamps = KonzenChat.options.timestamps;
-      }
+      };
     }
-    if (KonzenChat.localStorage == true) {
-      if (window.localStorage === undefined)
-        KonzenChat.localStorage = false;
-      else {
-        KonzenChat.autosave *= 10;
-        load_backlog(0);
-      }
-    }
-    if (KonzenChat.search_bar_game != "yes") {
-      build_UI(0);
-      KonzenChat.search_bar_game = "yes";
-      if (document.getElementsByClassName('btn btn_tools btn_target pan')[1] !== undefined) {
-        build_UI(1);
-        KonzenChat.search_bar_room = "yes";
-      } else {
-        document.getElementsByClassName('unread_chat_messages spriteall spritegame')[0].parentNode.onclick = function(event) {
-          if (KonzenChat.search_bar_room != "yes") {
-            KonzenChat.timeout = setTimeout(function() {
-              create_search_bar_delayed();
-            }, 300);
-          }
-        };
-      }
-    }
-    document.initialized = true;
   }
   toggle_chat_width();
 }
 
 function ready_to_start() {
   return document.getElementsByClassName('chat_message_window')[1] !== undefined ? true : false;
+}
+
+function get_environment() {
+  /* Configuration variables: */
+  /* expandBy (number) - pixels to be added to chat container width */
+  /* saveChatTolocalStorage (true|false) - true: enables saving chat to localStorage, false: disables saving chat to localStorage */
+  /* localStorageSize (number) - max number of chat messages to save in localStorage */
+  /* autosave (number) - number of chat inactivity seconds after which autosave is triggered */
+  /* timestamps ("fixed"|"dynamic"|"off") - "fixed": default behaviour, "dynamic": makes timestamps visible only when the mouse cursor hovers over chat messages, "off": hides timestamps */
+  KonzenChat = {
+    "version": "2.0.7",
+    "expandBy": 220,
+    "saveChatTolocalStorage": true,
+    "localStorageSize": 15,
+    "autosave": 10,
+    "timestamps": "fixed"
+  };
+  if (window.localStorage !== undefined) {
+    var optionsJson = localStorage.getItem('options');
+    if (optionsJson == null) {
+      KonzenChat.options = new options();
+      localStorage.setItem('options', JSON.stringify(KonzenChat.options));
+    } else {
+      KonzenChat.options = JSON.parse(optionsJson);
+      if (KonzenChat.version > KonzenChat.options.version) {
+        /*localStorage.removeItem('session');*/
+        KonzenChat.options.version = KonzenChat.version;
+        localStorage.setItem('options', JSON.stringify(KonzenChat.options));
+      }
+      KonzenChat.timestamps = KonzenChat.options.timestamps;
+    }
+    KonzenChat.autosave *= 10;
+  } else {
+    KonzenChat.saveChatTolocalStorage = false;
+  }
 }
 
 function options() {
@@ -116,9 +115,9 @@ function toggle_chat_width() {
 }
 
 function load_backlog(chat_room_number) {
-  var session = localStorage.getItem('session');
-  if (session !== null) {
-    var backlog = JSON.parse(session);
+  var sessionJson = localStorage.getItem('session');
+  if (sessionJson !== null) {
+    var backlog = JSON.parse(sessionJson);
     var chat = document.getElementsByClassName('chat_message_window')[chat_room_number + 1];
     var div = document.createElement("div");
     div.innerHTML = backlog.value;
@@ -167,7 +166,7 @@ function create_search_bar(chat_room_number) {
     "results": 0
   };
   /* localStorage */
-  if (KonzenChat.localStorage == true && chat_room_number == 0) {
+  if (KonzenChat.saveChatTolocalStorage == true && chat_room_number == 0) {
     KonzenChat[textarea_n].autosave = KonzenChat.autosave;
     /*KonzenChat[textarea_n].saved = false;*/
   }
@@ -266,21 +265,24 @@ function create_search_bar_delayed() {
     }, 100);
   } else {
     build_UI(1);
-    KonzenChat.search_bar_room = "yes";
+    KonzenChat.search_bar_room_initiated = true;
     clearTimeout(KonzenChat.timeout);
     delete(KonzenChat.timeout);
     if (KonzenChat.expanded == true) {
-      var chat_input = document.getElementsByClassName('chat_input');
-      chat_input[2].setAttribute("style", chat_input[1].getAttribute("style"));
+      var ci = document.getElementsByClassName('chat_input');
+      /*chat_input[2].setAttribute("style", chat_input[1].getAttribute("style"));*/
+      ci[2].style.width = (280 + KonzenChat.expandBy) + "px";
     }
   }
 }
 
 function add_menu_actions(chat_room_number) {
-  var cl = document.getElementsByClassName("chat_actions_list")[chat_room_number];
+  /* 1 chat_actions_list class is added by the script itself */
+  chat_actions_list_number = chat_room_number * 2;
+  var cl = document.getElementsByClassName("chat_actions_list")[chat_actions_list_number];
   cl.style.minWidth = "157px";
   add_action_timestamps(cl);
-  add_action_toggle_chat_width(cl);
+  add_action_toggle_chat_width(chat_room_number, cl);
 }
 
 function add_action_timestamps(cl) {
@@ -323,7 +325,7 @@ function add_action_timestamps_make_option(cl, li, value) {
   li.onclick = function(event) {
     KonzenChat.timestamps = value;
     add_action_timestamps_onclick_helper(0);
-    if (KonzenChat.search_bar_room == "yes") {
+    if (KonzenChat.search_bar_room_initiated == true) {
       add_action_timestamps_onclick_helper(1);
     }
     if (window.localStorage !== undefined) {
@@ -345,16 +347,17 @@ function add_action_timestamps_onclick_helper(chat_room_number) {
   find(textarea, chat_room_number);
 }
 
-function add_action_toggle_chat_width(cl) {
+function add_action_toggle_chat_width(chat_room_number, cl) {
   var li = document.createElement("li");
   li.innerHTML = "Toggle chat width";
   li.onclick = function(event) {
     toggle_chat_width();
     /* scroll last message into view (fix issue when shrinking) */
-    var chat_room_number = document.getElementById('game_room_tab').className == "chat_room_tab active" ? 0 : 1;
     var chat = document.getElementsByClassName('chat_message_window')[chat_room_number + 1];
     var messages = chat.getElementsByClassName('chat-message');
-    messages[messages.length - 1].scrollIntoViewIfNeeded();
+    if (messages.length > 0) {
+      messages[messages.length - 1].scrollIntoViewIfNeeded();
+    }
   };
   cl.appendChild(li);
 }
@@ -392,7 +395,7 @@ function find(textarea, chat_room_number) {
     /* increment to visit next element */
     i++;
     /* localStorage */
-    if (KonzenChat.localStorage == true && chat_room_number == 0) {
+    if (KonzenChat.saveChatTolocalStorage == true && chat_room_number == 0) {
       /* reset autosave timer */
       KonzenChat[textarea_n].autosave = KonzenChat.autosave;
       /* save every 8 messages */
@@ -408,7 +411,7 @@ function find(textarea, chat_room_number) {
     find(textarea, chat_room_number);
   } else {
     /* localStorage */
-    if (KonzenChat.localStorage == true && chat_room_number == 0) {
+    if (KonzenChat.saveChatTolocalStorage == true && chat_room_number == 0) {
       /* autosave */
       KonzenChat[textarea_n].autosave--;
       if (KonzenChat[textarea_n].autosave == 0) {
@@ -426,7 +429,7 @@ function find(textarea, chat_room_number) {
 }
 
 function find_reconnect_delayed() {
-  if (KonzenChat.search_bar_room == "yes") {
+  if (KonzenChat.search_bar_room_initiated == true) {
     if (document.getElementsByClassName('btn btn_tools btn_target pan')[1] !== undefined) {
       build_UI(0);
       build_UI(1);
