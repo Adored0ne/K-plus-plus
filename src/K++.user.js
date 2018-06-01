@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         KonzenChat
 // @namespace    http://tampermonkey.net/
-// @version      2.0.7
+// @version      2.0.8
 // @description  Kongregate chat Mod
 // @author       KonzenDouji
 // @match        https://www.kongregate.com/games/*
@@ -26,14 +26,14 @@ function start() {
     /* autosave (number) - number of chat inactivity seconds after which autosave is triggered */
     /* timestamps ("fixed"|"dynamic"|"off") - "fixed": default behaviour, "dynamic": makes timestamps visible only when the mouse cursor hovers over chat messages, "off": hides timestamps */
     KonzenChat = {
-      "version": "2.0.7",
+      "version": "2.0.8",
       "expandBy": 220,
       "saveChatTolocalStorage": true,
       "localStorageSize": 15,
       "autosave": 10,
       "timestamps": "fixed"
     };
-    define_scrollIntoViewIfNeeded();
+    defifn_scrollIntoViewIfNeeded();
     get_environment();
     build_UI_main();
   }
@@ -463,9 +463,9 @@ function find_timestamps(parentNode, chat, i) {
 /* hyperlinks (currently handles only 1st hyperlink in message) */
 function find_hyperlinks(parentNode, msg) {
   var regex = /([a-z])\w+:\/\/\S+/g;
-  var result = msg.textContent.match(regex);
+  var urls = msg.textContent.match(regex);
   /* if msg contains no URL */
-  if (result == null) {
+  if (urls == null) {
     return;
   }
   var aColl = parentNode.getElementsByTagName("a");
@@ -473,14 +473,17 @@ function find_hyperlinks(parentNode, msg) {
   if (aColl.length == 0 || aColl.length == 1 && aColl[0].className == "reply_link") {
     /* create hyperlink */
     var a = document.createElement("a");
-    a.textContent = result[0];
+    a.textContent = urls[0];
     setAttributes(a, {
-      "href": result[0],
+      "href": urls[0],
       "target": "_blank"
     });
     /* create new innerHTML for msg */
-    var index = msg.textContent.indexOf(result[0]);
-    var newInnerHTML = msg.textContent.substr(0, index) + a.outerHTML + msg.textContent.substr(index + result[0].length);
+    var index = msg.textContent.indexOf(urls[0]);
+    var newInnerHTML = msg.textContent.substr(0, index) + a.outerHTML;
+    var urlHTML = msg.innerHTML.match(regex)[0];
+    urlHTML = urlHTML.substr(-6) == "&nbsp;" ? urlHTML.substr(0, urlHTML.length - 6) : urlHTML;
+    newInnerHTML += msg.innerHTML.substr(index + urlHTML.length);
     /* set msg content */
     msg.innerHTML = newInnerHTML;
   }
@@ -511,7 +514,7 @@ function setAttributes(e, attrs) {
   }
 }
 
-function define_scrollIntoViewIfNeeded() {
+function defifn_scrollIntoViewIfNeeded() {
   if (!Element.prototype.scrollIntoViewIfNeeded) {
     Element.prototype.scrollIntoViewIfNeeded = function(centerIfNeeded) {
       centerIfNeeded = arguments.length === 0 ? true : !!centerIfNeeded;
