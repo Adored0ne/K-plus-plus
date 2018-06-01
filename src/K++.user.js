@@ -19,24 +19,23 @@ function start() {
   }
   /* Begin */
   if (window.KonzenChat === undefined) {
+    /* Configuration variables: */
+    /* expandBy (number) - pixels to be added to chat container width */
+    /* saveChatTolocalStorage (true|false) - true: enables saving chat to localStorage, false: disables saving chat to localStorage */
+    /* localStorageSize (number) - max number of chat messages to save in localStorage */
+    /* autosave (number) - number of chat inactivity seconds after which autosave is triggered */
+    /* timestamps ("fixed"|"dynamic"|"off") - "fixed": default behaviour, "dynamic": makes timestamps visible only when the mouse cursor hovers over chat messages, "off": hides timestamps */
+    KonzenChat = {
+      "version": "2.0.7",
+      "expandBy": 220,
+      "saveChatTolocalStorage": true,
+      "localStorageSize": 15,
+      "autosave": 10,
+      "timestamps": "fixed"
+    };
     define_scrollIntoViewIfNeeded();
     get_environment();
-    if (KonzenChat.saveChatTolocalStorage == true) {
-      load_backlog(0);
-    }
-    build_UI(0);
-    if (document.getElementsByClassName('btn btn_tools btn_target pan')[1] !== undefined) {
-      build_UI(1);
-      KonzenChat.search_bar_room_initiated = true;
-    } else {
-      document.getElementsByClassName('unread_chat_messages spriteall spritegame')[0].parentNode.onclick = function(event) {
-        if (KonzenChat.search_bar_room_initiated != true) {
-          KonzenChat.timeout = setTimeout(function() {
-            create_search_bar_delayed();
-          }, 300);
-        }
-      };
-    }
+    build_UI_main();
   }
   toggle_chat_width();
 }
@@ -46,20 +45,6 @@ function ready_to_start() {
 }
 
 function get_environment() {
-  /* Configuration variables: */
-  /* expandBy (number) - pixels to be added to chat container width */
-  /* saveChatTolocalStorage (true|false) - true: enables saving chat to localStorage, false: disables saving chat to localStorage */
-  /* localStorageSize (number) - max number of chat messages to save in localStorage */
-  /* autosave (number) - number of chat inactivity seconds after which autosave is triggered */
-  /* timestamps ("fixed"|"dynamic"|"off") - "fixed": default behaviour, "dynamic": makes timestamps visible only when the mouse cursor hovers over chat messages, "off": hides timestamps */
-  KonzenChat = {
-    "version": "2.0.7",
-    "expandBy": 220,
-    "saveChatTolocalStorage": true,
-    "localStorageSize": 15,
-    "autosave": 10,
-    "timestamps": "fixed"
-  };
   if (window.localStorage !== undefined) {
     var optionsJson = localStorage.getItem('options');
     if (optionsJson == null) {
@@ -146,9 +131,36 @@ function save_backlog(chat) {
   localStorage.setItem('session', JSON.stringify(backlog));
 }
 
+function build_UI_main() {
+  if (KonzenChat.saveChatTolocalStorage == true) {
+    load_backlog(0);
+  }
+  build_UI(0);
+  build_UI_delayed(1);
+}
+
 function build_UI(chat_room_number) {
   create_search_bar(chat_room_number);
   add_menu_actions(chat_room_number);
+
+  if (KonzenChat.expanded == true) {
+    var ci = document.getElementsByClassName('chat_input');
+    ci[chat_room_number + 1].style.width = (280 + KonzenChat.expandBy) + "px";
+  }
+}
+
+function build_UI_delayed(chat_room_number) {
+  clearTimeout(KonzenChat.timeout);
+  if (document.getElementsByClassName('btn btn_tools btn_target pan')[chat_room_number] !== undefined) {
+    build_UI(chat_room_number);
+    KonzenChat.search_bar_room_initiated = true;
+    delete(KonzenChat.timeout);
+  } else {
+    var timeout = KonzenChat.search_bar_room_initiated == true ? 100 : 300;
+    KonzenChat.timeout = setTimeout(function() {
+      build_UI_delayed(chat_room_number);
+    }, timeout);
+  }
 }
 
 function create_search_bar(chat_room_number) {
@@ -257,25 +269,6 @@ function create_search_bar(chat_room_number) {
   find(textarea, chat_room_number);
 }
 
-function create_search_bar_delayed() {
-  if (document.getElementsByClassName('btn btn_tools btn_target pan')[1] === undefined) {
-    clearTimeout(KonzenChat.timeout);
-    setTimeout(function() {
-      create_search_bar_delayed();
-    }, 100);
-  } else {
-    build_UI(1);
-    KonzenChat.search_bar_room_initiated = true;
-    clearTimeout(KonzenChat.timeout);
-    delete(KonzenChat.timeout);
-    if (KonzenChat.expanded == true) {
-      var ci = document.getElementsByClassName('chat_input');
-      /*chat_input[2].setAttribute("style", chat_input[1].getAttribute("style"));*/
-      ci[2].style.width = (280 + KonzenChat.expandBy) + "px";
-    }
-  }
-}
-
 function add_menu_actions(chat_room_number) {
   /* 1 chat_actions_list class is added by the script itself */
   chat_actions_list_number = chat_room_number * 2;
@@ -377,7 +370,7 @@ function find(textarea, chat_room_number) {
   if (document.getElementsByClassName('chat_message_window')[chat_room_number + 1] === undefined) {
     KonzenChat.timeout = setTimeout(function() {
       find_reconnect_delayed();
-    }, 1000);
+    }, 100);
     return;
   }
   var textarea_n = "textarea" + chat_room_number;
@@ -429,35 +422,14 @@ function find(textarea, chat_room_number) {
 }
 
 function find_reconnect_delayed() {
-  if (KonzenChat.search_bar_room_initiated == true) {
-    if (document.getElementsByClassName('btn btn_tools btn_target pan')[1] !== undefined) {
-      build_UI(0);
-      build_UI(1);
-      load_backlog(1);
-      clearTimeout(KonzenChat.timeout);
-      delete(KonzenChat.timeout);
-      toggle_chat_width();
-      toggle_chat_width();
-    } else {
-      clearTimeout(KonzenChat.timeout);
-      setTimeout(function() {
-        find_reconnect_delayed();
-      }, 100);
-    }
+  clearTimeout(KonzenChat.timeout);
+  delete(KonzenChat.timeout);
+  if (document.getElementsByClassName('btn btn_tools btn_target pan')[0] !== undefined) {
+    build_UI_main();
   } else {
-    if (document.getElementsByClassName('btn btn_tools btn_target pan')[0] !== undefined) {
-      build_UI(0);
-      load_backlog(0);
-      clearTimeout(KonzenChat.timeout);
-      delete(KonzenChat.timeout);
-      toggle_chat_width();
-      toggle_chat_width();
-    } else {
-      clearTimeout(KonzenChat.timeout);
-      setTimeout(function() {
-        find_reconnect_delayed();
-      }, 100);
-    }
+    setTimeout(function() {
+      find_reconnect_delayed();
+    }, 100);
   }
 }
 
