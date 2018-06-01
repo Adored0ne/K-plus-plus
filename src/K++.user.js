@@ -479,8 +479,8 @@ function find_hyperlinks(parentNode, msg) {
       "target": "_blank"
     });
     /* create new innerHTML for msg */
-    var index = msg.innerHTML.indexOf(result[0]);
-    var newInnerHTML = msg.innerHTML.substr(0, index) + a.outerHTML + msg.innerHTML.substr(index + result[0].length);
+    var index = msg.textContent.indexOf(result[0]);
+    var newInnerHTML = msg.textContent.substr(0, index) + a.outerHTML + msg.textContent.substr(index + result[0].length);
     /* set msg content */
     msg.innerHTML = newInnerHTML;
   }
