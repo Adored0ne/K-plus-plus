@@ -318,9 +318,9 @@ function add_entry_submenu_add_option(cl, ul, settingName, value) {
   li.textContent = "Set: " + value.charAt(0).toUpperCase() + value.slice(1);
   li.onclick = function(event) {
     KonzenChat.options[settingName] = value;
-    add_entry_onclick_helper(0);
+    add_entry_onclick_helper(0, settingName);
     if (KonzenChat.search_bar_room_initiated == true) {
-      add_entry_onclick_helper(1);
+      add_entry_onclick_helper(1, settingName);
     }
     if (window.localStorage !== undefined) {
       localStorage.setItem('options', JSON.stringify(KonzenChat.options));
@@ -332,7 +332,11 @@ function add_entry_submenu_add_option(cl, ul, settingName, value) {
   ul.appendChild(li);
 }
 
-function add_entry_onclick_helper(chat_room_number) {
+function add_entry_onclick_helper(chat_room_number, settingName) {
+  if (settingName == "fontSize") {
+    var ci = document.getElementsByClassName('chat_input');
+    setFontSize(ci[chat_room_number + 1].style);
+  }
   var textarea_n = "textarea" + chat_room_number;
   var textarea = document.getElementsByClassName('textarea')[chat_room_number];
   KonzenChat[textarea_n].i = 0;
@@ -437,10 +441,16 @@ function find_reconnect_delayed() {
 }
 
 function find_font_size(chat_message) {
+  setFontSize(chat_message.style);
+}
+
+function setFontSize(objStyle) {
   if (KonzenChat.options.fontSize == "default") {
-    chat_message.style.fontSize = null;
+    objStyle.fontSize = null;
   } else if (KonzenChat.options.fontSize == "medium") {
-    chat_message.style.fontSize = "12.5px";
+    objStyle.fontSize = "12.5px";
+  } else {
+    objStyle.fontSize = KonzenChat.options.fontSize;
   }
 }
 
