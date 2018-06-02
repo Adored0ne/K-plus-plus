@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         KonzenChat
 // @namespace    http://tampermonkey.net/
-// @version      2.0.8
+// @version      2.0.9
 // @description  Kongregate chat Mod
 // @author       KonzenDouji
 // @match        https://www.kongregate.com/games/*
@@ -26,12 +26,13 @@ function start() {
     /* autosave (number) - number of chat inactivity seconds after which autosave is triggered */
     /* timestamps ("fixed"|"dynamic"|"off") - "fixed": default behaviour, "dynamic": makes timestamps visible only when the mouse cursor hovers over chat messages, "off": hides timestamps */
     KonzenChat = {
-      "version": "2.0.8",
+      "version": "2.0.9",
       "expandBy": 220,
       "saveChatTolocalStorage": true,
       "localStorageSize": 15,
       "autosave": 10,
-      "timestamps": "fixed"
+      "timestamps": "fixed",
+      "fontSize": "default"
     };
     defifn_scrollIntoViewIfNeeded();
     get_environment();
@@ -58,6 +59,7 @@ function get_environment() {
         localStorage.setItem('options', JSON.stringify(KonzenChat.options));
       }
       KonzenChat.timestamps = KonzenChat.options.timestamps;
+      KonzenChat.fontSize = KonzenChat.options.fontSize;
     }
     KonzenChat.autosave *= 10;
   } else {
@@ -68,6 +70,7 @@ function get_environment() {
 function options() {
   this.version = KonzenChat.version;
   this.timestamps = KonzenChat.timestamps;
+  this.fontSize = KonzenChat.fontSize;
 }
 
 function toggle_chat_width() {
@@ -141,7 +144,7 @@ function build_UI_main() {
 
 function build_UI(chat_room_number) {
   create_search_bar(chat_room_number);
-  add_menu_actions(chat_room_number);
+  create_menu_entries(chat_room_number);
 
   if (KonzenChat.expanded == true) {
     var ci = document.getElementsByClassName('chat_input');
@@ -269,24 +272,38 @@ function create_search_bar(chat_room_number) {
   find(textarea, chat_room_number);
 }
 
-function add_menu_actions(chat_room_number) {
-  /* 1 chat_actions_list class is added by the script itself */
-  chat_actions_list_number = chat_room_number * 2;
-  var cl = document.getElementsByClassName("chat_actions_list")[chat_actions_list_number];
+function create_menu_entries(chat_room_number) {
+  var cls = document.getElementsByClassName("chat_actions_list");
+  /* chat_actions_list classes are added by the script itself */
+  chat_actions_list_number = chat_room_number * (cls.length - 1);
+  var cl = cls[chat_actions_list_number];
   cl.style.minWidth = "157px";
-  add_action_timestamps(cl);
-  add_action_toggle_chat_width(chat_room_number, cl);
+  add_entry_submenu(cl, "timestamps", "Timestamps", "fixed", "dynamic", "off");
+  add_entry_submenu(cl, "fontSize", "Font Size", "default", "medium");
+  add_entry_toggle_chat_width(chat_room_number, cl);
 }
 
-function add_action_timestamps(cl) {
-  var msg = KonzenChat.timestamps.charAt(0).toUpperCase() + KonzenChat.timestamps.slice(1);
+function add_entry_submenu(cl, settingName, submenuName) {
+  var li = create_li(submenuName + " " + "▼");
+  var ul = create_ul();
+  for (i = 3; i < arguments.length; i++) {
+    add_entry_submenu_add_option(cl, ul, settingName, arguments[i]);
+  }
+  li.appendChild(ul);
+  cl.appendChild(li);
+}
+
+function create_li(label) {
   var li = document.createElement("li");
-  li.textContent = "Timestamps ▼";
+  li.textContent = label;
   li.onclick = function(event) {
     event.target.childNodes[1].toggle();
     event.stopPropagation();
   };
-  /* submenu */
+  return li;
+}
+
+function create_ul() {
   var ul = document.createElement("ul");
   setAttributes(ul, {
     "class": "chat_actions_list",
@@ -296,42 +313,30 @@ function add_action_timestamps(cl) {
     event.stopPropagation();
   };
   ul.toggle();
-  /* entry 1 */
-  var li_fix = document.createElement("li");
-  add_action_timestamps_make_option(cl, li_fix, "fixed");
-  /* entry 2 */
-  var li_dyn = document.createElement("li");
-  add_action_timestamps_make_option(cl, li_dyn, "dynamic");
-  /* entry 3 */
-  var li_off = document.createElement("li");
-  add_action_timestamps_make_option(cl, li_off, "off");
-
-  ul.appendChild(li_fix);
-  ul.appendChild(li_dyn);
-  ul.appendChild(li_off);
-  li.appendChild(ul);
-  cl.appendChild(li);
+  return ul;
 }
 
-function add_action_timestamps_make_option(cl, li, value) {
+function add_entry_submenu_add_option(cl, ul, settingName, value) {
+  var li = document.createElement("li");
   li.textContent = "Set: " + value.charAt(0).toUpperCase() + value.slice(1);
   li.onclick = function(event) {
-    KonzenChat.timestamps = value;
-    add_action_timestamps_onclick_helper(0);
+    KonzenChat[settingName] = value;
+    add_entry_onclick_helper(0);
     if (KonzenChat.search_bar_room_initiated == true) {
-      add_action_timestamps_onclick_helper(1);
+      add_entry_onclick_helper(1);
     }
     if (window.localStorage !== undefined) {
-      KonzenChat.options.timestamps = value;
+      KonzenChat.options[settingName] = value;
       localStorage.setItem('options', JSON.stringify(KonzenChat.options));
     }
     event.target.parentNode.toggle();
     cl.toggle();
     event.stopPropagation();
   };
+  ul.appendChild(li);
 }
 
-function add_action_timestamps_onclick_helper(chat_room_number) {
+function add_entry_onclick_helper(chat_room_number) {
   var textarea_n = "textarea" + chat_room_number;
   var textarea = document.getElementsByClassName('textarea')[chat_room_number];
   KonzenChat[textarea_n].i = 0;
@@ -340,7 +345,7 @@ function add_action_timestamps_onclick_helper(chat_room_number) {
   find(textarea, chat_room_number);
 }
 
-function add_action_toggle_chat_width(chat_room_number, cl) {
+function add_entry_toggle_chat_width(chat_room_number, cl) {
   var li = document.createElement("li");
   li.innerHTML = "Toggle chat width";
   li.onclick = function(event) {
@@ -379,6 +384,8 @@ function find(textarea, chat_room_number) {
   if (chat[i] !== undefined) {
     var parentNode = chat[i].childNodes[0];
     var msg = parentNode.getElementsByClassName("message hyphenate")[0];
+    /* font size */
+    find_font_size(chat[i]);
     /* timestamps */
     find_timestamps(parentNode, chat, i);
     /* hyperlinks */
@@ -430,6 +437,14 @@ function find_reconnect_delayed() {
     setTimeout(function() {
       find_reconnect_delayed();
     }, 100);
+  }
+}
+
+function find_font_size(chat_message) {
+  if (KonzenChat.fontSize == "default") {
+    chat_message.style.fontSize = null;
+  } else if (KonzenChat.fontSize == "medium") {
+    chat_message.style.fontSize = "12.5px";
   }
 }
 
