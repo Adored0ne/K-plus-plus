@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         KonzenChat
 // @namespace    http://tampermonkey.net/
-// @version      2.0.9
+// @version      2.0.10
 // @description  Kongregate chat Mod
 // @author       KonzenDouji
 // @match        https://www.kongregate.com/games/*
@@ -24,15 +24,12 @@ function start() {
     /* saveChatTolocalStorage (true|false) - true: enables saving chat to localStorage, false: disables saving chat to localStorage */
     /* localStorageSize (number) - max number of chat messages to save in localStorage */
     /* autosave (number) - number of chat inactivity seconds after which autosave is triggered */
-    /* timestamps ("fixed"|"dynamic"|"off") - "fixed": default behaviour, "dynamic": makes timestamps visible only when the mouse cursor hovers over chat messages, "off": hides timestamps */
     KonzenChat = {
-      "version": "2.0.9",
+      "version": "2.0.10",
       "expandBy": 220,
       "saveChatTolocalStorage": true,
       "localStorageSize": 15,
-      "autosave": 10,
-      "timestamps": "fixed",
-      "fontSize": "default"
+      "autosave": 10
     };
     defifn_scrollIntoViewIfNeeded();
     get_environment();
@@ -49,7 +46,7 @@ function get_environment() {
   if (window.localStorage !== undefined) {
     var optionsJson = localStorage.getItem('options');
     if (optionsJson == null) {
-      KonzenChat.options = new options();
+      KonzenChat.options = new default_options();
       localStorage.setItem('options', JSON.stringify(KonzenChat.options));
     } else {
       KonzenChat.options = JSON.parse(optionsJson);
@@ -58,8 +55,6 @@ function get_environment() {
         KonzenChat.options.version = KonzenChat.version;
         localStorage.setItem('options', JSON.stringify(KonzenChat.options));
       }
-      KonzenChat.timestamps = KonzenChat.options.timestamps;
-      KonzenChat.fontSize = KonzenChat.options.fontSize;
     }
     KonzenChat.autosave *= 10;
   } else {
@@ -67,10 +62,12 @@ function get_environment() {
   }
 }
 
-function options() {
+function default_options() {
   this.version = KonzenChat.version;
-  this.timestamps = KonzenChat.timestamps;
-  this.fontSize = KonzenChat.fontSize;
+  /* timestamps ("default"|"dynamic"|"off") - "dynamic": makes timestamps visible only when the mouse cursor hovers over chat messages, "off": hides timestamps */
+  /* fontSize ("default"|"medium") - "medium": sets messages font size to 12.5px */
+  this.timestamps = "default";
+  this.fontSize = "default";
 }
 
 function toggle_chat_width() {
@@ -146,8 +143,9 @@ function build_UI(chat_room_number) {
   create_search_bar(chat_room_number);
   create_menu_entries(chat_room_number);
 
+  var ci = document.getElementsByClassName('chat_input');
+  setFontSize(ci[chat_room_number + 1].style);
   if (KonzenChat.expanded == true) {
-    var ci = document.getElementsByClassName('chat_input');
     ci[chat_room_number + 1].style.width = (280 + KonzenChat.expandBy) + "px";
   }
 }
@@ -278,7 +276,7 @@ function create_menu_entries(chat_room_number) {
   chat_actions_list_number = chat_room_number * (cls.length - 1);
   var cl = cls[chat_actions_list_number];
   cl.style.minWidth = "157px";
-  add_entry_submenu(cl, "timestamps", "Timestamps", "fixed", "dynamic", "off");
+  add_entry_submenu(cl, "timestamps", "Timestamps", "default", "dynamic", "off");
   add_entry_submenu(cl, "fontSize", "Font Size", "default", "medium");
   add_entry_toggle_chat_width(chat_room_number, cl);
 }
@@ -320,13 +318,12 @@ function add_entry_submenu_add_option(cl, ul, settingName, value) {
   var li = document.createElement("li");
   li.textContent = "Set: " + value.charAt(0).toUpperCase() + value.slice(1);
   li.onclick = function(event) {
-    KonzenChat[settingName] = value;
-    add_entry_onclick_helper(0);
+    KonzenChat.options[settingName] = value;
+    add_entry_onclick_helper(0, settingName);
     if (KonzenChat.search_bar_room_initiated == true) {
-      add_entry_onclick_helper(1);
+      add_entry_onclick_helper(1, settingName);
     }
     if (window.localStorage !== undefined) {
-      KonzenChat.options[settingName] = value;
       localStorage.setItem('options', JSON.stringify(KonzenChat.options));
     }
     event.target.parentNode.toggle();
@@ -336,7 +333,11 @@ function add_entry_submenu_add_option(cl, ul, settingName, value) {
   ul.appendChild(li);
 }
 
-function add_entry_onclick_helper(chat_room_number) {
+function add_entry_onclick_helper(chat_room_number, settingName) {
+  if (settingName == "fontSize") {
+    var ci = document.getElementsByClassName('chat_input');
+    setFontSize(ci[chat_room_number + 1].style);
+  }
   var textarea_n = "textarea" + chat_room_number;
   var textarea = document.getElementsByClassName('textarea')[chat_room_number];
   KonzenChat[textarea_n].i = 0;
@@ -441,25 +442,29 @@ function find_reconnect_delayed() {
 }
 
 function find_font_size(chat_message) {
-  if (KonzenChat.fontSize == "default") {
-    chat_message.style.fontSize = null;
-  } else if (KonzenChat.fontSize == "medium") {
-    chat_message.style.fontSize = "12.5px";
+  setFontSize(chat_message.style);
+}
+
+function setFontSize(objStyle) {
+  if (KonzenChat.options.fontSize == "default") {
+    objStyle.fontSize = null;
+  } else if (KonzenChat.options.fontSize == "medium") {
+    objStyle.fontSize = "12.5px";
+  } else {
+    objStyle.fontSize = KonzenChat.options.fontSize;
   }
 }
 
 function find_timestamps(parentNode, chat, i) {
   var timestamp = parentNode.getElementsByClassName("timestamp")[0];
-  /* case "fixed" */
-  if (KonzenChat.timestamps == "fixed") {
+  if (KonzenChat.options.timestamps == "default") {
     /* Show timestamps only when message time changes */
     if (chat[i - 1] === undefined || chat[i - 1].childNodes[0].getElementsByClassName("timestamp")[0].innerHTML != timestamp.innerHTML) {
       timestamp.style.display = null;
     }
     parentNode.onmouseenter = null;
     parentNode.onmouseleave = null;
-  } /* case "dynamic" */
-  else if (KonzenChat.timestamps == "dynamic") {
+  } else if (KonzenChat.options.timestamps == "dynamic") {
     timestamp.style.display = "none";
     parentNode.onmouseenter = function(event) {
       event.target.getElementsByClassName("timestamp")[0].style.display = null;
@@ -467,8 +472,7 @@ function find_timestamps(parentNode, chat, i) {
     parentNode.onmouseleave = function(event) {
       event.target.getElementsByClassName("timestamp")[0].style.display = "none";
     };
-  } /* case "off" */
-  else {
+  } else if (KonzenChat.options.timestamps == "off") {
     timestamp.style.display = "none";
     parentNode.onmouseenter = null;
     parentNode.onmouseleave = null;
