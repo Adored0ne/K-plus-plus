@@ -64,9 +64,9 @@ function get_environment() {
 
 function default_options() {
   this.version = KonzenChat.version;
-  /* timestamps ("fixed"|"dynamic"|"off") - "fixed": default behaviour, "dynamic": makes timestamps visible only when the mouse cursor hovers over chat messages, "off": hides timestamps */
+  /* timestamps ("default"|"dynamic"|"off") - "dynamic": makes timestamps visible only when the mouse cursor hovers over chat messages, "off": hides timestamps */
   /* fontSize ("default"|"medium") - "medium": sets messages font size to 12.5px */
-  this.timestamps = "fixed";
+  this.timestamps = "default";
   this.fontSize = "default";
 }
 
@@ -275,7 +275,7 @@ function create_menu_entries(chat_room_number) {
   chat_actions_list_number = chat_room_number * (cls.length - 1);
   var cl = cls[chat_actions_list_number];
   cl.style.minWidth = "157px";
-  add_entry_submenu(cl, "timestamps", "Timestamps", "fixed", "dynamic", "off");
+  add_entry_submenu(cl, "timestamps", "Timestamps", "default", "dynamic", "off");
   add_entry_submenu(cl, "fontSize", "Font Size", "default", "medium");
   add_entry_toggle_chat_width(chat_room_number, cl);
 }
@@ -446,7 +446,7 @@ function find_font_size(chat_message) {
 
 function find_timestamps(parentNode, chat, i) {
   var timestamp = parentNode.getElementsByClassName("timestamp")[0];
-  if (KonzenChat.options.timestamps == "fixed") {
+  if (KonzenChat.options.timestamps == "default") {
     /* Show timestamps only when message time changes */
     if (chat[i - 1] === undefined || chat[i - 1].childNodes[0].getElementsByClassName("timestamp")[0].innerHTML != timestamp.innerHTML) {
       timestamp.style.display = null;
