@@ -143,8 +143,9 @@ function build_UI(chat_room_number) {
   create_search_bar(chat_room_number);
   create_menu_entries(chat_room_number);
 
+  var ci = document.getElementsByClassName('chat_input');
+  setFontSize(ci[chat_room_number + 1].style);
   if (KonzenChat.expanded == true) {
-    var ci = document.getElementsByClassName('chat_input');
     ci[chat_room_number + 1].style.width = (280 + KonzenChat.expandBy) + "px";
   }
 }
