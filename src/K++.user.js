@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         KonzenChat
 // @namespace    http://tampermonkey.net/
-// @version      2.0.10
+// @version      2.0.11
 // @description  Kongregate chat Mod
 // @author       KonzenDouji
 // @match        https://www.kongregate.com/games/*
@@ -25,7 +25,7 @@ function start() {
     /* localStorageSize (number) - max number of chat messages to save in localStorage */
     /* autosave (number) - number of chat inactivity seconds after which autosave is triggered */
     KonzenChat = {
-      "version": "2.0.10",
+      "version": "2.0.11",
       "expandBy": 220,
       "saveChatTolocalStorage": true,
       "localStorageSize": 15,
@@ -277,7 +277,7 @@ function create_menu_entries(chat_room_number) {
   var cl = cls[chat_actions_list_number];
   cl.style.minWidth = "157px";
   add_entry_submenu(cl, "timestamps", "Timestamps", "default", "dynamic", "off");
-  add_entry_submenu(cl, "fontSize", "Font Size", "default", "medium");
+  add_entry_submenu(cl, "fontSize", "Font Size", "default", "medium", "[custom]");
   add_entry_toggle_chat_width(chat_room_number, cl);
 }
 
@@ -318,7 +318,14 @@ function add_entry_submenu_add_option(cl, ul, settingName, value) {
   var li = document.createElement("li");
   li.textContent = "Set: " + value.charAt(0).toUpperCase() + value.slice(1);
   li.onclick = function(event) {
-    KonzenChat.options[settingName] = value;
+    if (settingName == "fontSize" && value == "[custom]") {
+      var custom = prompt("Please enter font size", 11);
+      if (custom != null) {
+        KonzenChat.options[settingName] = custom + "px";
+      }
+    } else {
+      KonzenChat.options[settingName] = value;
+    }
     add_entry_onclick_helper(0, settingName);
     if (KonzenChat.search_bar_room_initiated == true) {
       add_entry_onclick_helper(1, settingName);
