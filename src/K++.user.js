@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         KonzenChat
 // @namespace    http://tampermonkey.net/
-// @version      2.0.10
+// @version      2.0.11
 // @description  Kongregate chat Mod
 // @author       KonzenDouji
 // @match        https://www.kongregate.com/games/*
@@ -25,7 +25,7 @@ function start() {
     /* localStorageSize (number) - max number of chat messages to save in localStorage */
     /* autosave (number) - number of chat inactivity seconds after which autosave is triggered */
     KonzenChat = {
-      "version": "2.0.10",
+      "version": "2.0.11",
       "expandBy": 220,
       "saveChatTolocalStorage": true,
       "localStorageSize": 15,
@@ -143,7 +143,9 @@ function build_UI(chat_room_number) {
   create_search_bar(chat_room_number);
   create_menu_entries(chat_room_number);
 
+  var cmw = document.getElementsByClassName('chat_message_window');
   var ci = document.getElementsByClassName('chat_input');
+  setFontSize(cmw[chat_room_number + 1].style);
   setFontSize(ci[chat_room_number + 1].style);
   if (KonzenChat.expanded == true) {
     ci[chat_room_number + 1].style.width = (280 + KonzenChat.expandBy) + "px";
@@ -277,7 +279,7 @@ function create_menu_entries(chat_room_number) {
   var cl = cls[chat_actions_list_number];
   cl.style.minWidth = "157px";
   add_entry_submenu(cl, "timestamps", "Timestamps", "default", "dynamic", "off");
-  add_entry_submenu(cl, "fontSize", "Font Size", "default", "medium");
+  add_entry_submenu(cl, "fontSize", "Font Size", "default", "medium", "[custom]");
   add_entry_toggle_chat_width(chat_room_number, cl);
 }
 
@@ -318,7 +320,14 @@ function add_entry_submenu_add_option(cl, ul, settingName, value) {
   var li = document.createElement("li");
   li.textContent = "Set: " + value.charAt(0).toUpperCase() + value.slice(1);
   li.onclick = function(event) {
-    KonzenChat.options[settingName] = value;
+    if (settingName == "fontSize" && value == "[custom]") {
+      var custom = prompt("Please enter font size", 11);
+      if (custom != null) {
+        KonzenChat.options[settingName] = custom + "px";
+      }
+    } else {
+      KonzenChat.options[settingName] = value;
+    }
     add_entry_onclick_helper(0, settingName);
     if (KonzenChat.search_bar_room_initiated == true) {
       add_entry_onclick_helper(1, settingName);
@@ -335,7 +344,9 @@ function add_entry_submenu_add_option(cl, ul, settingName, value) {
 
 function add_entry_onclick_helper(chat_room_number, settingName) {
   if (settingName == "fontSize") {
+    var cmw = document.getElementsByClassName('chat_message_window');
     var ci = document.getElementsByClassName('chat_input');
+    setFontSize(cmw[chat_room_number + 1].style);
     setFontSize(ci[chat_room_number + 1].style);
   }
   var textarea_n = "textarea" + chat_room_number;
@@ -344,6 +355,16 @@ function add_entry_onclick_helper(chat_room_number, settingName) {
   KonzenChat[textarea_n].results = 0;
   clearTimeout(KonzenChat[textarea_n].timeout);
   find(textarea, chat_room_number);
+}
+
+function setFontSize(objStyle) {
+  if (KonzenChat.options.fontSize == "default") {
+    objStyle.fontSize = null;
+  } else if (KonzenChat.options.fontSize == "medium") {
+    objStyle.fontSize = "12.5px";
+  } else {
+    objStyle.fontSize = KonzenChat.options.fontSize;
+  }
 }
 
 function add_entry_toggle_chat_width(chat_room_number, cl) {
@@ -385,8 +406,6 @@ function find(textarea, chat_room_number) {
   if (chat[i] !== undefined) {
     var parentNode = chat[i].childNodes[0];
     var msg = parentNode.getElementsByClassName("message hyphenate")[0];
-    /* font size */
-    find_font_size(chat[i]);
     /* timestamps */
     find_timestamps(parentNode, chat, i);
     /* hyperlinks */
@@ -438,20 +457,6 @@ function find_reconnect_delayed() {
     setTimeout(function() {
       find_reconnect_delayed();
     }, 100);
-  }
-}
-
-function find_font_size(chat_message) {
-  setFontSize(chat_message.style);
-}
-
-function setFontSize(objStyle) {
-  if (KonzenChat.options.fontSize == "default") {
-    objStyle.fontSize = null;
-  } else if (KonzenChat.options.fontSize == "medium") {
-    objStyle.fontSize = "12.5px";
-  } else {
-    objStyle.fontSize = KonzenChat.options.fontSize;
   }
 }
 
