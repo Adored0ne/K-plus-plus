@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         KonzenChat
 // @namespace    http://tampermonkey.net/
-// @version      2.0.12
+// @version      2.0.13
 // @description  Kongregate chat Mod
 // @author       KonzenDouji
 // @match        https://www.kongregate.com/games/*
@@ -26,7 +26,7 @@ function start() {
     /* localStorageSize (number) - max number of chat messages to save in localStorage */
     /* autosave (number) - number of chat inactivity seconds after which autosave is triggered */
     KonzenChat = {
-      "version": "2.0.12",
+      "version": "2.0.13",
       "expandBy": 220,
       "saveChatTolocalStorage": true,
       "localStorageSize": 15,
@@ -508,10 +508,8 @@ function find_hyperlinks(parentNode, msg) {
     var newInnerHTML = msg.textContent.substr(0, index) + a.outerHTML;
     var urlHTML = msg.innerHTML.match(regex)[0];
     urlHTML = urlHTML.substr(-6) == "&nbsp;" ? urlHTML.substr(0, urlHTML.length - 6) : urlHTML;
-    /* convert urlHTML to text to count length correctly and add text after url */
-    var tag = document.createElement('div');
-    tag.innerHTML = urlHTML;
-    newInnerHTML += msg.textContent.substr(index + tag.textContent.length);
+    /* add text after url (user HTML as it may contain a whisper "reply") */
+    newInnerHTML += msg.innerHTML.substr(msg.innerHTML.indexOf(urlHTML) + urlHTML.length);
     /* set msg content */
     msg.innerHTML = newInnerHTML;
   }
